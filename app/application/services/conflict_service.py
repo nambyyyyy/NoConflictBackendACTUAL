@@ -12,7 +12,7 @@ from application.dtos.conflict_dto import (
 from domain.entities.conflict import Conflict, ConflictError
 from domain.entities.conflict_item import ConflictItem
 from domain.entities.conflict_event import ConflictEvent
-from application.validators.conflict_validator import ConflictValidator
+from backend.app.application.validators.conflict_validators import ConflictValidator
 from typing import Optional, Callable, Any
 from uuid import UUID
 from datetime import datetime, timezone

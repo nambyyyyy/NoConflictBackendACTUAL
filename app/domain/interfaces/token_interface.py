@@ -1,20 +1,23 @@
 from abc import ABC, abstractmethod
+from uuid import UUID
 
-class TokenRepository(ABC):
+class EmailTokenRepository(ABC):
+    """Интерфейс для токенов подтверждения email."""
+
     @abstractmethod
-    def make_token(self, user_entity) -> str:
+    def generate_token(self, user_id: str) -> str:
         pass
-    
+
     @abstractmethod
-    def check_token(self, user_entity, token: str) -> bool:
+    def verify_token(self, token: str, max_age: int) -> str | None:
         pass
 
 
 class JWTRepository(ABC):
     @abstractmethod
-    def create_access_token(self, user) -> str:
+    def create_access_token(self, data: dict) -> str:
         pass
     
     @abstractmethod
-    def create_refresh_token(self, user) -> str:
+    def create_refresh_token(self, data: dict) -> str:
         pass
