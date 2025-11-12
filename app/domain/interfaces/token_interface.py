@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from uuid import UUID
+from typing import Optional
 
 class EmailTokenRepository(ABC):
     """Интерфейс для токенов подтверждения email."""
@@ -9,7 +9,7 @@ class EmailTokenRepository(ABC):
         pass
 
     @abstractmethod
-    def verify_token(self, token: str, max_age: int) -> str | None:
+    def verify_token(self, token: str, max_age: int = 3600) -> bool:
         pass
 
 

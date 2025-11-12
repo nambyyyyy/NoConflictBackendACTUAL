@@ -17,3 +17,7 @@ class UserResponse(BaseModel):
 class LoginRequest(BaseModel):
     login: str
     password: str
+    
+
+class TokenPayload(BaseModel):
+    sub: str

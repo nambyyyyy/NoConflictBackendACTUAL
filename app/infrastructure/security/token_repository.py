@@ -15,11 +15,12 @@ class FastAPIEmailTokenRepository(EmailTokenRepository):
     def generate_token(self, user_id: str) -> str:
         return self.serializer.dumps(user_id)
 
-    def verify_token(self, token: str, max_age: int = 3600) -> Optional[str]:
+    def verify_token(self, token: str, max_age: int = 3600) -> bool:
         try:
-            return self.serializer.loads(token, max_age)
+            self.serializer.loads(token, max_age)
+            return True
         except (SignatureExpired, BadSignature):
-            return None
+            return False
 
 
 class FastAPIJWTRepository(JWTRepository):

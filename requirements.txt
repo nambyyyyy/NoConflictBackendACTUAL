@@ -27,6 +27,7 @@ httpx==0.28.1
 idna==3.11
 itsdangerous==2.2.0
 Jinja2==3.1.6
+jose==1.0.0
 jwt==1.4.0
 kombu==5.5.4
 markdown-it-py==4.0.0

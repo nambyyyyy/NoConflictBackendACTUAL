@@ -161,7 +161,6 @@ class ConflictService:
         self,
         user_id: UUID,
         slug: str,
-        transaction_atomic: Callable,
         channel_layer: Callable,
     ) -> ConflictDetailDTO:
         return await self._update_offer_truce(
@@ -172,7 +171,6 @@ class ConflictService:
         self,
         user_id: UUID,
         slug: str,
-        transaction_atomic: Callable,
         channel_layer: Callable,
     ) -> ConflictDetailDTO:
         return await self._update_offer_truce(
@@ -183,7 +181,6 @@ class ConflictService:
         self,
         user_id: UUID,
         slug: str,
-        transaction_atomic: Callable,
         channel_layer: Callable,
     ) -> ConflictDetailDTO:
         return await self._update_offer_truce(

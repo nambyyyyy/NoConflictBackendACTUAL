@@ -1,12 +1,9 @@
 from app.domain.interfaces.user_interface import UserRepository
 from app.domain.interfaces.token_interface import EmailTokenRepository, JWTRepository
 from app.domain.interfaces.password_interface import PasswordHasher, PasswordValidator
-from app.domain.interfaces.transaction_interface import TransactionManager
 from app.domain.interfaces.link_interface import LinkDecoder
 from app.application.dtos.user_dto import UserDTO
 from app.domain.entities.user import User
-from uuid import uuid4
-from datetime import datetime
 from typing import Callable, Optional
 from uuid import UUID
 from app.application.validators.auth_validators import AuthValidator
@@ -42,24 +39,25 @@ class AuthService:
     ) -> UserDTO:
 
         await self.validator.validate_registration(email, username, password)
-        user_entity: User = self._to_entity(email, username, password)
+        user_entity: User = User.create_entity(
+            email, username, self.password_hasher.hash(password)
+        )
         saved_entity: User = await self.user_repo.create(user_entity)
         token: str = self.email_token_repository.generate_token(str(user_entity.id))
 
         send_email_func(str(saved_entity.id), token, base_url=base_url)
-        return self._to_dto(saved_entity)
+        return UserDTO.create_dto(saved_entity)
 
     async def verify_email(self, uidb64: str, token: str) -> UserDTO:
-        user_id_str: str = self.link_decoder.decode(uidb64)
-        user_id = UUID(user_id_str)
-        user_entity: Optional[User] = await self.user_repo.get_by_id(user_id)
+        user_id: str = self.link_decoder.decode(uidb64)
+        user_entity: Optional[User] = await self.user_repo.get_by_id(UUID(user_id))
 
         if user_entity is None:
             raise ValueError("Пользователь не найден")
 
         self.validator.validate_verify(user_entity)
 
-        if not self.token_repo.check_token(user_entity, token):
+        if not self.email_token_repository.verify_token(token):
             raise ValueError("Закончился срок действия токена")
 
         user_entity.email_confirmed = True
@@ -69,10 +67,10 @@ class AuthService:
         if updated_entity is None:
             raise ValueError("Пользователь не найден")
 
-        return self._to_dto(updated_entity)
+        return UserDTO.create_dto(updated_entity)
 
     async def login(self, login: str, password: str) -> dict[str, str]:
-        user_entity = await self.user_repo.get_by_email(login)
+        user_entity: Optional[User] = await self.user_repo.get_by_email(login)
         if not user_entity:
             user_entity = await self.user_repo.get_by_username(login)
 
@@ -87,19 +85,3 @@ class AuthService:
             "token_type": "Bearer",
         }
 
-    def  _to_entity(self, email: str, username: str, password: str) -> User:
-        return User(
-            id=uuid4(),
-            email=email,
-            username=username,
-            password_hash=self.password_hasher.hash(password),
-            created_at=datetime.now(),
-        )
-
-    def _to_dto(self, user_entity: User) -> UserDTO:
-        return UserDTO(
-            id=user_entity.id,
-            email=user_entity.email,
-            username=user_entity.username,
-            email_confirmed=user_entity.email_confirmed,
-        )

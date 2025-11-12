@@ -3,7 +3,7 @@ from app.infrastructure.persistence.sqlalchemy.repositories.user_repository impo
     SQLAlchemyUserRepository,
 )
 from app.domain.entities.user import User
-from backend.app.infrastructure.dependencies import get_db_session
+from app.infrastructure.database.sessions import get_db_session
 from app.config import settings
 from uuid import UUID
 from typing import Optional

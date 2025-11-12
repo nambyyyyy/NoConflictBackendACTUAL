@@ -27,16 +27,27 @@ from app.infrastructure.persistence.sqlalchemy.repositories.item_repository impo
 from app.infrastructure.persistence.sqlalchemy.repositories.event_repository import (
     SQLAlchemyConflictEventRepository,
 )
+from app.infrastructure.persistence.sqlalchemy.repositories.user_repository import (
+    SQLAlchemyUserRepository,
+)
 
 from app.infrastructure.security.password_hasher import FastAPIPasswordHasher
 from app.infrastructure.security.password_validator import FastAPIPasswordValidator
 from app.infrastructure.security.link_decoder import FastAPILinkDecoder
 from app.application.services.auth_service import AuthService
-from app.application.services.profile_service import ProfileService
+# from app.application.services.profile_service import ProfileService
 from app.application.services.conflict_service import ConflictService
+from app.application.services.user_service import UserService
+from app.application.dtos.user_dto import UserDTO
 
 from app.infrastructure.database.sessions import get_db_session
-
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError
+import jwt
+from dotenv import load_dotenv
+from uuid import UUID
+import os
 # from app.no_conflict_project.settings import SECRET_KEY, MEDIA_URL
 # from app.infrastructure.processors.avatar.avatar_processor import DjangoAvatarProcessor
 # from app.infrastructure.processors.avatar.avatar_validator import AvatarValidator
@@ -45,9 +56,13 @@ from app.infrastructure.database.sessions import get_db_session
 # from app.infrastructure.processors.avatar.image_saver import ImageSaver
 # from app.infrastructure.storage.local_storage import LocalStorage
 import os
+from jose import JWTError
+import jwt
 from dotenv import load_dotenv
-load_dotenv()
+from uuid import UUID
 
+load_dotenv()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/login")
 
 async def get_auth_service() -> AuthService:
     """Фабрика для создания AuthService"""
@@ -63,21 +78,21 @@ async def get_auth_service() -> AuthService:
     )
 
 
-def get_profile_service() -> ProfileService:
-    """Фабрика для создания ProfileService"""
-    # avatar_processor = DjangoAvatarProcessor(
-    #     validator=AvatarValidator(),
-    #     generator=FilenameGenerator(),
-    #     processor=ImageProcessor(),
-    #     saver=ImageSaver(storage=LocalStorage()),
-    #     upload_dir="avatars",
-    # )
+# def get_profile_service() -> ProfileService:
+#     """Фабрика для создания ProfileService"""
+# avatar_processor = DjangoAvatarProcessor(
+#     validator=AvatarValidator(),
+#     generator=FilenameGenerator(),
+#     processor=ImageProcessor(),
+#     saver=ImageSaver(storage=LocalStorage()),
+#     upload_dir="avatars",
+# )
 
-    return ProfileService(
-        profile_repository=SQLAlchemyProfileRepository(),
-        # avatar_processor=avatar_processor,
-        # media_base_url=MEDIA_URL,
-    )
+# return ProfileService(
+#     profile_repository=SQLAlchemyProfileRepository(),
+#     # avatar_processor=avatar_processor,
+#     # media_base_url=MEDIA_URL,
+# )
 
 
 async def get_conflict_service() -> ConflictService:
@@ -87,3 +102,32 @@ async def get_conflict_service() -> ConflictService:
         item_repository=SQLAlchemyConflictItemRepository(await get_db_session()),
         event_repository=SQLAlchemyConflictEventRepository(await get_db_session()),
     )
+
+
+async def get_user_service() -> UserService:
+    """Фабрика для создания UserService"""
+    return UserService(user_repository=SQLAlchemyUserRepository(await get_db_session()))
+
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    user_service: UserService = Depends(get_user_service),
+):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=["HS256"])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user: UserDTO = await user_service.get_user(UUID(user_id))
+    if user is None:
+        raise credentials_exception
+    return user
