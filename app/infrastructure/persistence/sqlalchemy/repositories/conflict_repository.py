@@ -5,7 +5,9 @@ from sqlalchemy.orm import selectinload
 from app.domain.interfaces.conflict_interface import ConflictRepository
 from app.domain.entities.conflict import Conflict
 from app.infrastructure.persistence.sqlalchemy.models.conflict import ConflictORM
-from app.infrastructure.persistence.sqlalchemy.repositories.base_repository import UtilRepository
+from app.infrastructure.persistence.sqlalchemy.repositories.base_repository import (
+    UtilRepository,
+)
 from uuid import UUID
 
 
@@ -43,7 +45,17 @@ class SQLAlchemyConflictRepository(ConflictRepository, UtilRepository):
         self.db_session.add(new_conflict)
         await self.db_session.commit()
         await self.db_session.refresh(new_conflict)
-        conflict_data = self.dict_for_entity(new_conflict)
+
+        orm_conflict = await self.db_session.scalar(
+            select(ConflictORM)
+            .where(ConflictORM.id == new_conflict.id)
+            .options(
+                selectinload(ConflictORM.items),
+                selectinload(ConflictORM.events),
+            )
+        )
+
+        conflict_data = self.dict_for_entity(orm_conflict)
         return Conflict.create_entity(**conflict_data)
 
     async def update(
@@ -87,14 +99,12 @@ class SQLAlchemyConflictRepository(ConflictRepository, UtilRepository):
 
         await self.db_session.commit()
         await self.db_session.refresh(orm_conflict)
-        
+
         if return_none:
             return
-        
+
         conflict_data = self.dict_for_entity(orm_conflict)
         return Conflict.create_entity(**conflict_data)
-    
+
     async def delete(self, slug: str):
         pass
-    
-

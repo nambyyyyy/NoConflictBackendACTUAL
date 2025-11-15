@@ -26,7 +26,7 @@ class SQLAlchemyConflictItemRepository(ItemRepository, UtilRepository):
             )
         )
         if orm_item is not None:
-            item_data = self.dict_for_entity(orm_item)
+            item_data = self.fast_dict_for_entity(orm_item)
             return ConflictItem.create_entity(**item_data)
 
     async def create(self, item: ConflictItem) -> Optional[ConflictItem]:
@@ -39,7 +39,7 @@ class SQLAlchemyConflictItemRepository(ItemRepository, UtilRepository):
         await self.db_session.commit()
         await self.db_session.refresh(new_item)
         
-        item_data = self.dict_for_entity(new_item)
+        item_data = self.fast_dict_for_entity(new_item)
         return ConflictItem.create_entity(**item_data)
 
     async def update(
@@ -71,6 +71,6 @@ class SQLAlchemyConflictItemRepository(ItemRepository, UtilRepository):
         await self.db_session.commit()
         await self.db_session.refresh(orm_item)
         
-        item_data = self.dict_for_entity(orm_item)
+        item_data = self.fast_dict_for_entity(orm_item)
         return ConflictItem.create_entity(**item_data)
     
