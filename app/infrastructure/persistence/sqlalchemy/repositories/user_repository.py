@@ -5,9 +5,10 @@ from uuid import UUID
 from app.domain.interfaces.user_interface import UserRepository
 from app.domain.entities.user import User
 from app.infrastructure.persistence.sqlalchemy.models.user import UserORM
+from app.infrastructure.persistence.sqlalchemy.repositories.base_repository import UtilRepository
 
 
-class SQLAlchemyUserRepository(UserRepository):
+class SQLAlchemyUserRepository(UserRepository, UtilRepository):
 
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
@@ -17,19 +18,22 @@ class SQLAlchemyUserRepository(UserRepository):
             select(UserORM).where(UserORM.email == email)
         )
         if orm_user is not None:
-            return self._to_entity(orm_user)
+            user_data = self.dict_for_entity(orm_user)
+            return User.create_entity(**user_data)
 
     async def get_by_username(self, username: str) -> Optional[User]:
         orm_user = await self.db_session.scalar(
             select(UserORM).where(UserORM.username == username)
         )
         if orm_user is not None:
-            return self._to_entity(orm_user)
+            user_data = self.dict_for_entity(orm_user)
+            return User.create_entity(**user_data)
 
     async def get_by_id(self, id: UUID) -> Optional[User]:
         orm_user = await self.db_session.scalar(select(UserORM).where(UserORM.id == id))
         if orm_user is not None:
-            return self._to_entity(orm_user)
+            user_data = self.dict_for_entity(orm_user)
+            return User.create_entity(**user_data)
 
     async def create(self, user: User) -> Optional[User]:
         new_user = UserORM(
@@ -43,7 +47,8 @@ class SQLAlchemyUserRepository(UserRepository):
         self.db_session.add(new_user)
         await self.db_session.commit()
         await self.db_session.refresh(new_user)
-        return self._to_entity(new_user)
+        user_data = self.dict_for_entity(new_user)
+        return User.create_entity(**user_data)
 
     async def update(
         self, user: User, update_fields: Optional[list[str]] = None
@@ -68,7 +73,8 @@ class SQLAlchemyUserRepository(UserRepository):
         await self.db_session.commit()
         await self.db_session.refresh(orm_user)
 
-        return self._to_entity(orm_user)
+        user_data = self.dict_for_entity(orm_user)
+        return User.create_entity(**user_data)
 
     async def delete(self, id: UUID) -> bool:
         orm_user = await self.db_session.scalar(select(UserORM).where(UserORM.id == id))
@@ -79,16 +85,3 @@ class SQLAlchemyUserRepository(UserRepository):
         await self.db_session.commit()
         await self.db_session.refresh(orm_user)
         return True
-
-    def _to_entity(self, orm_user: UserORM) -> User:
-        """Приватный метод конвертации"""
-        return User(
-            id=orm_user.id,
-            email=orm_user.email,
-            username=orm_user.username,
-            password_hash=orm_user.password,
-            email_confirmed=orm_user.email_confirmed,
-            is_active=orm_user.is_active,
-            created_at=orm_user.created_at,
-            updated_at=orm_user.updated_at,
-        )

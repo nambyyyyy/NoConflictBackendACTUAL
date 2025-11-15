@@ -13,3 +13,9 @@ class ConflictItem:
     agreed_choice_value: Optional[str] = None
     is_agreed: bool = False
 
+    @classmethod
+    def create_entity(
+        cls, id: UUID, conflict_id: UUID, title: str, **kwargs
+    ) -> "ConflictItem":
+
+        return cls(id=id, conflict_id=conflict_id, title=title, **kwargs)

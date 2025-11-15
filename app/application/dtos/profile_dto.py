@@ -1,13 +1,13 @@
 from uuid import UUID
 from typing import Optional
 from datetime import datetime
-from abc import ABC
 from dataclasses import dataclass
-
+from app.application.dtos.base_dto import BaseDTO
 
 @dataclass
-class ProfileDTO(ABC):
+class ProfileDTO(BaseDTO):
     """DTO для отдачи данных профиля на клиент"""
+
     id: UUID
     user_id: UUID
     first_name: Optional[str] = None
@@ -19,3 +19,4 @@ class ProfileDTO(ABC):
     avatar_url: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+

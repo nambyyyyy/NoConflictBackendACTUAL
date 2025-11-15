@@ -39,7 +39,7 @@ class ProfileORM(Base, BaseORM):
 
     # Связь: профиль принадлежит пользователю
     user: Mapped["UserORM"] = relationship(
-        "UserModel", back_populates="profile", lazy="select"
+        "UserModel", back_populates="profile", lazy="selectin"
     )
 
     def __str__(self):

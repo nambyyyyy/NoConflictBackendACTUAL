@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
-from uuid import uuid4, UUID
+from uuid import UUID
 from domain.entities.conflict_item import ConflictItem
 from domain.entities.conflict_event import ConflictEvent
+
 
 class ConflictError(Exception):
     """Любая доменная ошибка по конфликтам."""
@@ -12,17 +13,17 @@ class ConflictError(Exception):
 @dataclass
 class Conflict:
     title: str
+    id: UUID
     creator_id: UUID
+    slug: str
+    created_at: datetime
     creator_username: Optional[str] = None
-    partner_id: Optional[UUID] = None 
+    partner_id: Optional[UUID] = None
     partner_username: Optional[str] = None
-    
-    id: UUID = field(default_factory=uuid4)
+
     status: str = "pending"  # pending / in_progress / resolved / cancelled / abandoned
-    slug: str = field(default_factory=lambda: str(uuid4()))
 
     progress: float = 0.0
-    created_at: datetime = field(default_factory=datetime.utcnow)
     resolved_at: Optional[datetime] = None
 
     deleted_by_creator: bool = False
@@ -36,4 +37,27 @@ class Conflict:
 
     items: list["ConflictItem"] = field(default_factory=list)
     events: list["ConflictEvent"] = field(default_factory=list)
-    
+
+    @classmethod
+    def create_entity(
+        cls,
+        title: str,
+        id: UUID,
+        creator_id: UUID,
+        slug: str,
+        created_at: datetime,
+        **kwargs
+    ) -> "Conflict":
+        items = [ConflictItem.create_entity(**data) for data in kwargs.pop("items", [])]
+        events = [ConflictEvent.create_entity(**data) for data in kwargs.pop("events", [])]
+        
+        return cls(
+            title=title,
+            id=id,
+            creator_id=creator_id,
+            slug=slug,
+            created_at=created_at,
+            items=items,
+            events=events,
+            **kwargs
+        )

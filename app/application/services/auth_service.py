@@ -5,7 +5,8 @@ from app.domain.interfaces.link_interface import LinkDecoder
 from app.application.dtos.user_dto import UserDTO
 from app.domain.entities.user import User
 from typing import Callable, Optional
-from uuid import UUID
+from datetime import datetime
+from uuid import UUID, uuid4
 from app.application.validators.auth_validators import AuthValidator
 
 
@@ -40,7 +41,11 @@ class AuthService:
 
         await self.validator.validate_registration(email, username, password)
         user_entity: User = User.create_entity(
-            email, username, self.password_hasher.hash(password)
+            id=uuid4(),
+            email=email,
+            username=username,
+            password_hash=self.password_hasher.hash(password),
+            created_at=datetime.now(),
         )
         saved_entity: User = await self.user_repo.create(user_entity)
         token: str = self.email_token_repository.generate_token(str(user_entity.id))
@@ -84,4 +89,3 @@ class AuthService:
             "refresh": refresh_token,
             "token_type": "Bearer",
         }
-

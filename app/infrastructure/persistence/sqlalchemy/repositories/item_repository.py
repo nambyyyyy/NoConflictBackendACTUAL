@@ -7,9 +7,12 @@ from app.domain.entities.conflict_item import ConflictItem
 from app.infrastructure.persistence.sqlalchemy.models.conflict_item import (
     ConflictItemORM,
 )
+from app.infrastructure.persistence.sqlalchemy.repositories.base_repository import (
+    UtilRepository,
+)
 
 
-class SQLAlchemyConflictItemRepository(ItemRepository):
+class SQLAlchemyConflictItemRepository(ItemRepository, UtilRepository):
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
 
@@ -23,7 +26,8 @@ class SQLAlchemyConflictItemRepository(ItemRepository):
             )
         )
         if orm_item is not None:
-            return self._to_entity(orm_item)
+            item_data = self.dict_for_entity(orm_item)
+            return ConflictItem.create_entity(**item_data)
 
     async def create(self, item: ConflictItem) -> Optional[ConflictItem]:
         new_item = ConflictItemORM(
@@ -34,7 +38,9 @@ class SQLAlchemyConflictItemRepository(ItemRepository):
         self.db_session.add(new_item)
         await self.db_session.commit()
         await self.db_session.refresh(new_item)
-        return self._to_entity(new_item)
+        
+        item_data = self.dict_for_entity(new_item)
+        return ConflictItem.create_entity(**item_data)
 
     async def update(
         self, item: ConflictItem, update_fields: Optional[list[str]] = None
@@ -64,15 +70,7 @@ class SQLAlchemyConflictItemRepository(ItemRepository):
 
         await self.db_session.commit()
         await self.db_session.refresh(orm_item)
-        return self._to_entity(orm_item)
+        
+        item_data = self.dict_for_entity(orm_item)
+        return ConflictItem.create_entity(**item_data)
     
-    def _to_entity(self, orm_item: ConflictItemORM) -> ConflictItem:
-        return ConflictItem(
-            id=orm_item.id,
-            conflict_id=orm_item.conflict_id,
-            title=orm_item.title,
-            creator_choice_value=orm_item.creator_choice_value,
-            partner_choice_value=orm_item.partner_choice_value,
-            agreed_choice_value=orm_item.agreed_choice_value,
-            is_agreed=orm_item.is_agreed,
-        )

@@ -21,10 +21,10 @@ class ConflictItemORM(Base, IsDeletedORM):
     is_agreed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     conflict: Mapped["ConflictORM"] = relationship(
-        "ConflictModel", back_populates="items", lazy="select"
+        "ConflictModel", back_populates="items", lazy="selectin"
     )
     events: Mapped[list["ConflictEventORM"]] = relationship(
-        "ConflictEventModel", back_populates="item", lazy="joined"
+        "ConflictEventModel", back_populates="item", lazy="selectin"
     )
 
     def __str__(self):

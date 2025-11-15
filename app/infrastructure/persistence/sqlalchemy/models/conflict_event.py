@@ -45,9 +45,9 @@ class ConflictEventORM(Base, IsDeletedORM):
     new_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     conflict: Mapped["ConflictORM"] = relationship(
-        "ConflictORM", back_populates="events", lazy="select"
+        "ConflictORM", back_populates="events", lazy="selectin"
     )
     item: Mapped[Optional["ConflictItemORM"]] = relationship(
-        "ConflictItemORM", back_populates="events", lazy="select"
+        "ConflictItemORM", back_populates="events", lazy="selectin"
     )
-    initiator: Mapped[Optional["UserORM"]] = relationship("UserORM", lazy="joined")
+    initiator: Mapped[Optional["UserORM"]] = relationship("UserORM", lazy="selectin")
