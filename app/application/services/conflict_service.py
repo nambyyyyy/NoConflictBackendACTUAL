@@ -3,20 +3,13 @@ from domain.interfaces.conflict_interface import (
 )
 from domain.interfaces.item_interface import ItemRepository
 from domain.interfaces.event_interface import EventRepository
-from application.dtos.conflict_dto import (
-    ConflictDetailDTO,
-    ConflictItemDTO,
-    ConflictEventDTO,
-    ConflictShortDTO,
-)
 from domain.entities.conflict import Conflict, ConflictError
 from domain.entities.conflict_item import ConflictItem
 from domain.entities.conflict_event import ConflictEvent
-from backend.app.application.validators.conflict_validators import ConflictValidator
+from application.validators.conflict_validators import ConflictValidator
 from typing import Optional, Callable
 from uuid import UUID, uuid4
 from datetime import datetime, timezone
-
 
 
 class ConflictService:
@@ -37,7 +30,7 @@ class ConflictService:
         partner_id: Optional[UUID],
         title: str,
         items: list[dict],
-    ) -> ConflictDetailDTO:
+    ) -> Conflict:
 
         self.conflict_valid.validate_conflict_registration(
             creator_id, partner_id, title, items
@@ -90,20 +83,20 @@ class ConflictService:
             await self.item_repo.create(item)
 
         saved_conflict: Conflict = await self.conflict_repo.create(conflict_entity)
-        return ConflictDetailDTO.create_dto(saved_conflict)
+        return saved_conflict
 
-    async def get_conflict(self, user_id: UUID, slug: str) -> ConflictDetailDTO:
+    async def get_conflict(self, user_id: UUID, slug: str) -> Optional[Conflict]:
         conflict_entity: Optional[Conflict] = await self.conflict_repo.get_by_slug(slug)
         self.conflict_valid.validate_access_conflict(conflict_entity, user_id)
         self.conflict_valid.validate_delete_conflict(conflict_entity, user_id)  # type: ignore
-        return ConflictDetailDTO.create_dto(conflict_entity)
+        return conflict_entity
 
     async def cancel_conflict(
         self,
         user_id: UUID,
         slug: str,
         channel_layer: Callable,
-    ) -> ConflictShortDTO:
+    ) -> Conflict:
         conflict_entity: Optional[Conflict] = await self.conflict_repo.get_by_slug(slug)
         self.conflict_valid.validate_access_conflict(conflict_entity, user_id)
 
@@ -139,7 +132,7 @@ class ConflictService:
         #         "initiator_username": event_entity.initiator_username,
         #     },
         # )
-        return ConflictShortDTO.create_dto(updated_conflict)
+        return updated_conflict
 
     async def delete_conflict(self, user_id: UUID, slug: str) -> None:
         conflict_entity: Optional[Conflict] = await self.conflict_repo.get_by_slug(slug)
@@ -172,7 +165,7 @@ class ConflictService:
         user_id: UUID,
         slug: str,
         channel_layer: Callable,
-    ) -> ConflictDetailDTO:
+    ) -> Conflict:
         return await self._update_offer_truce(
             user_id, slug, channel_layer, "none", "pending"
         )
@@ -182,7 +175,7 @@ class ConflictService:
         user_id: UUID,
         slug: str,
         channel_layer: Callable,
-    ) -> ConflictDetailDTO:
+    ) -> Conflict:
         return await self._update_offer_truce(
             user_id, slug, channel_layer, "pending", "none"
         )
@@ -192,7 +185,7 @@ class ConflictService:
         user_id: UUID,
         slug: str,
         channel_layer: Callable,
-    ) -> ConflictDetailDTO:
+    ) -> Conflict:
         return await self._update_offer_truce(
             user_id, slug, channel_layer, "pending", "accepted"
         )
@@ -205,7 +198,7 @@ class ConflictService:
         item_id: UUID,
         item_title: str,
         new_value: str,
-    ) -> ConflictDetailDTO | ConflictItemDTO:
+    ) -> Conflict | ConflictItem:
         self.conflict_valid.validate_item_update(
             event_type, user_id, slug, item_id, new_value
         )
@@ -260,7 +253,7 @@ class ConflictService:
                 id=uuid4(),
                 conflict_id=conflict_entity.id,
                 event_type="conflict_resolved",
-                created_at=datetime.now(timezone.utc)
+                created_at=datetime.now(timezone.utc),
             )
             await self.event_repo.create(event_entity)
             conflict: Conflict = await self.conflict_repo.update(
@@ -276,11 +269,7 @@ class ConflictService:
                 "is_agreed",
             ],
         )
-        return (
-            ConflictDetailDTO.create_dto(conflict)
-            if item.is_agreed
-            else ConflictItemDTO.create_dto(item)
-        )
+        return conflict if item.is_agreed else item
 
     async def _update_offer_truce(
         self,
@@ -289,7 +278,7 @@ class ConflictService:
         channel_layer: Callable,
         old_truce_status: str,
         new_truce_status: str,
-    ) -> ConflictDetailDTO:
+    ) -> Conflict:
         conflict_entity: Optional[Conflict] = await self.conflict_repo.get_by_slug(slug)
         self.conflict_valid.validate_access_conflict(conflict_entity, user_id)
 
@@ -333,7 +322,7 @@ class ConflictService:
         #         "initiator_username": event_entity.initiator_username,
         #     },
         # )
-        return ConflictDetailDTO.create_dto(saved_conflict)
+        return saved_conflict
 
     def _update_progress(self, conflict: Conflict, item_id: UUID) -> None:
         for index, item in enumerate(conflict.items):
@@ -349,4 +338,3 @@ class ConflictService:
         if conflict.progress >= 100:
             conflict.status = "resolved"
             conflict.resolved_at = datetime.now(timezone.utc)
-

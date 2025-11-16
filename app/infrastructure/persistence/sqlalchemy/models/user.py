@@ -1,6 +1,6 @@
 from sqlalchemy import Boolean, String, Index, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from persistence.sqlalchemy.models.base import Base, IsDeletedORM
+from infrastructure.persistence.sqlalchemy.models.base import IsDeletedORM, Base
 from typing import Optional
 
 

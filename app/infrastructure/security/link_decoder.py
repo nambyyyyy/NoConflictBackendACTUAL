@@ -1,6 +1,6 @@
 import base64
 import binascii
-from app.domain.interfaces.link_interface import LinkDecoder
+from domain.interfaces.link_interface import LinkDecoder
 
 
 class FastAPILinkDecoder(LinkDecoder):

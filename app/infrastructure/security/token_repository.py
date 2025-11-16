@@ -1,9 +1,10 @@
-from app.domain.interfaces.token_interface import EmailTokenRepository, JWTRepository
+from domain.interfaces.token_interface import EmailTokenRepository, JWTRepository
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 import jwt
 from typing import Optional
+from domain.entities.user import User
 
 
 class FastAPIEmailTokenRepository(EmailTokenRepository):
@@ -36,19 +37,23 @@ class FastAPIJWTRepository(JWTRepository):
         self.algorithm = algorithm
         self.ACCESS_TOKEN_EXPIRE_MINUTES = ACCESS_TOKEN_EXPIRE_MINUTES
 
-    def create_access_token(self, data: dict) -> str:
-        """
-        Создаёт JWT с payload (sub, role, id, exp).
-        """
-        to_encode = data.copy()
-        expire = datetime.now(timezone.utc) + timedelta(
-            minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
-        to_encode.update({"exp": expire})
-        return jwt.encode(to_encode, self.secret_key, self.algorithm)
+    def create_access_token(self, user: User) -> str:
+        payload = {
+            "user_id": str(user.id),
+            "exp": datetime.now(timezone.utc)
+            + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES),
+            "token_type": "refresh",
+            "jti": str(uuid4()),
+        }
+        return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
 
-    def create_refresh_token(self, data: dict) -> str:
-        to_encode = data.copy()
-        expire = datetime.now(timezone.utc) + timedelta(days=30)
-        to_encode.update({"exp": expire, "token_type": "refresh", "jti": str(uuid4())})
-        return jwt.encode(to_encode, self.secret_key, self.algorithm)
+    def create_refresh_token(self, user: User) -> str:
+        payload = {
+            'user_id': str(user.id),
+            'exp': datetime.now(timezone.utc) + timedelta(days=30),
+            'token_type': 'refresh',
+            'jti': str(uuid4())
+        }
+        return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+
+

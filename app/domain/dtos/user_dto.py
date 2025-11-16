@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from uuid import UUID
-from app.application.dtos.base_dto import BaseDTO
+from domain.dtos.base_dto import BaseDTO
 
 
 @dataclass

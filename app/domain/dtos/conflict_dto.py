@@ -2,7 +2,7 @@ from uuid import UUID
 from typing import Optional, List
 from datetime import datetime
 from dataclasses import dataclass
-from app.application.dtos.base_dto import BaseDTO
+from domain.dtos.base_dto import BaseDTO
 
 
 @dataclass

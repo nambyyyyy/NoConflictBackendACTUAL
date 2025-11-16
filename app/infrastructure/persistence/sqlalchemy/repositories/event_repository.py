@@ -1,20 +1,16 @@
-from typing import Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.domain.interfaces.event_interface import EventRepository
-from app.domain.entities.conflict_event import ConflictEvent
-from app.infrastructure.persistence.sqlalchemy.models.conflict_event import (
+from domain.interfaces.event_interface import EventRepository
+from domain.entities.conflict_event import ConflictEvent
+from infrastructure.persistence.sqlalchemy.models.conflict_event import (
     ConflictEventORM,
 )
-from app.infrastructure.persistence.sqlalchemy.repositories.base_repository import (
-    UtilRepository,
+from infrastructure.persistence.sqlalchemy.repositories.base_repository import (
+    SQLAlchemyBaseRepository,
 )
 
 
-class SQLAlchemyConflictEventRepository(EventRepository, UtilRepository):
-    def __init__(self, db_session: AsyncSession):
-        self.db_session = db_session
+class SQLAlchemyConflictEventRepository(EventRepository, SQLAlchemyBaseRepository):
 
-    async def create(self, event: ConflictEvent) -> Optional[ConflictEvent]:
+    async def create(self, event: ConflictEvent) -> ConflictEvent:
         new_event = ConflictEventORM(
             conflict_id=event.conflict_id,
             item_id=event.item_id,
@@ -28,4 +24,4 @@ class SQLAlchemyConflictEventRepository(EventRepository, UtilRepository):
         await self.db_session.refresh(new_event)
 
         event_data = self.dict_for_entity(new_event)
-        return ConflictEvent.create_entity(**event_data)
+        return self.create_from_data(event_data)

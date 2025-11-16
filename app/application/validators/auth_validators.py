@@ -1,7 +1,7 @@
-from app.domain.interfaces.user_interface import UserRepository
-from app.domain.interfaces.password_interface import PasswordValidator, PasswordHasher
+from domain.interfaces.user_interface import UserRepository
+from domain.interfaces.password_interface import PasswordValidator, PasswordHasher
 from typing import Optional
-from app.domain.entities.user import User
+from domain.entities.user import User
 
 
 class AuthValidator:

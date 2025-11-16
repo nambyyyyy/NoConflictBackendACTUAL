@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 from sqlalchemy import String, Text, Uuid, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from persistence.sqlalchemy.models.base import Base, BaseORM
+from infrastructure.persistence.sqlalchemy.models.base import BaseORM, Base
 from sqlalchemy import Enum as SQLEnum
 import enum
 

@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 from uuid import UUID
 from domain.entities.conflict_item import ConflictItem
 from domain.entities.conflict_event import ConflictEvent
+from domain.entities.protocols import EntityProtocol
 
 
 class ConflictError(Exception):
@@ -38,6 +39,7 @@ class Conflict:
     items: list["ConflictItem"] = field(default_factory=list)
     events: list["ConflictEvent"] = field(default_factory=list)
 
+    
     @classmethod
     def create_entity(
         cls,

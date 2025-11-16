@@ -1,13 +1,12 @@
-from app.domain.interfaces.user_interface import UserRepository
-from app.domain.interfaces.token_interface import EmailTokenRepository, JWTRepository
-from app.domain.interfaces.password_interface import PasswordHasher, PasswordValidator
-from app.domain.interfaces.link_interface import LinkDecoder
-from app.application.dtos.user_dto import UserDTO
-from app.domain.entities.user import User
+from domain.interfaces.user_interface import UserRepository
+from domain.interfaces.token_interface import EmailTokenRepository, JWTRepository
+from domain.interfaces.password_interface import PasswordHasher, PasswordValidator
+from domain.interfaces.link_interface import LinkDecoder
+from domain.entities.user import User
 from typing import Callable, Optional
 from datetime import datetime
 from uuid import UUID, uuid4
-from app.application.validators.auth_validators import AuthValidator
+from application.validators.auth_validators import AuthValidator
 
 
 class AuthService:
@@ -37,7 +36,7 @@ class AuthService:
         password: str,
         send_email_func: Callable,
         base_url: str,
-    ) -> UserDTO:
+    ) -> User:
 
         await self.validator.validate_registration(email, username, password)
         user_entity: User = User.create_entity(
@@ -51,9 +50,9 @@ class AuthService:
         token: str = self.email_token_repository.generate_token(str(user_entity.id))
 
         send_email_func(str(saved_entity.id), token, base_url=base_url)
-        return UserDTO.create_dto(saved_entity)
+        return saved_entity
 
-    async def verify_email(self, uidb64: str, token: str) -> UserDTO:
+    async def verify_email(self, uidb64: str, token: str) -> User:
         user_id: str = self.link_decoder.decode(uidb64)
         user_entity: Optional[User] = await self.user_repo.get_by_id(UUID(user_id))
 
@@ -72,7 +71,7 @@ class AuthService:
         if updated_entity is None:
             raise ValueError("Пользователь не найден")
 
-        return UserDTO.create_dto(updated_entity)
+        return updated_entity
 
     async def login(self, login: str, password: str) -> dict[str, str]:
         user_entity: Optional[User] = await self.user_repo.get_by_email(login)
@@ -81,8 +80,8 @@ class AuthService:
 
         self.validator.validate_login(user_entity, password)
 
-        access_token = self.jwt_repository.create_access_token(user_entity)
-        refresh_token = self.jwt_repository.create_refresh_token(user_entity)
+        access_token = self.jwt_repository.create_access_token(user_entity) # type: ignore
+        refresh_token = self.jwt_repository.create_refresh_token(user_entity) # type: ignore
 
         return {
             "access": access_token,

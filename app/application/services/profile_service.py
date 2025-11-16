@@ -1,10 +1,8 @@
-from app.domain.interfaces.profile_interface import ProfileRepository
-from app.domain.interfaces.avatar_processor import AvatarProcessor
+from domain.interfaces.profile_interface import ProfileRepository
+from domain.interfaces.avatar_processor import AvatarProcessor
 from uuid import UUID, uuid4
 from typing import Optional
-from app.domain.entities.profile import Profile
-from application.dtos.profile_dto import ProfileDTO
-from datetime import datetime
+from domain.entities.profile import Profile
 
 
 class ProfileService:
@@ -18,20 +16,20 @@ class ProfileService:
         self.profile_repo = profile_repository
         self.avatar_processor = avatar_processor
 
-    async def create_profile(self, user_id: UUID) -> ProfileDTO:
+    async def create_profile(self, user_id: UUID) -> Profile:
         if await self.profile_repo.get_by_user_id(user_id):
             raise ValueError("Profile already exists")
 
         profile_entity: Profile = Profile.create_entity(id=uuid4(), user_id=user_id)
         created_profile: Profile = await self.profile_repo.create(profile_entity)
-        return ProfileDTO.create_dto(created_profile)
+        return created_profile
 
     async def update_profile(
         self,
         user_id: UUID,
         profile_data: dict,
         avatar_file: Optional[object] = None,
-    ) -> ProfileDTO:
+    ) -> Profile:
 
         profile_entity: Optional[Profile] = await self.profile_repo.get_by_user_id(
             user_id
@@ -48,13 +46,13 @@ class ProfileService:
         for field_name, field_value in profile_data.items():
             setattr(profile_entity, field_name, field_value)
 
-        profile_entity: Optional[Profile] = await self.profile_repo.update(
+        profile_updated: Optional[Profile] = await self.profile_repo.update(
             profile_entity
         )
-        if profile_entity is None:
+        if profile_updated is None:
             raise ValueError("Profile not found")
 
-        return ProfileDTO.create_dto(profile_entity)
+        return profile_updated
 
     # def _get_avatar_url(self, filename: Optional[str]) -> Optional[str]:
     #     return f"{self.media_base_url}avatars/{filename}" if filename else None

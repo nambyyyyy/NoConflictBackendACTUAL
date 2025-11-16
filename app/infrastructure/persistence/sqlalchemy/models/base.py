@@ -2,12 +2,10 @@ import uuid
 from datetime import datetime
 from typing import Optional
 from sqlalchemy import DateTime, Boolean, Uuid, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
 
 class Base(DeclarativeBase):
-    """Базовый класс для всех моделей."""
-
     pass
 
 
@@ -28,9 +26,6 @@ class BaseORM:
 
 
 class IsDeletedORM(BaseORM):
-    """
-    Абстрактная модель, расширяющая BaseModel, добавляющая поля для мягкого удаления.
-    """
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

@@ -1,22 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.application.services.conflict_service import ConflictService
-from backend.app.presentation.api.v1.shemas.conflict_shema import (
+from application.services.conflict_service import ConflictService
+from presentation.api.v1.shemas.conflict_shema import (
     CreateConflict,
     ConflictDetailResponse,
 )
-from backend.app.presentation.api.v1.dependencies import (
+from presentation.api.v1.dependencies import (
     get_conflict_service,
     get_current_user,
 )
-from application.dtos.conflict_dto import ConflictDetailDTO
-from application.dtos.user_dto import UserDTO
+from domain.dtos.conflict_dto import ConflictDetailDTO
+from domain.dtos.user_dto import UserDTO
+from domain.entities.conflict import Conflict
 from fastapi import status
 from functools import wraps
 
 router = APIRouter()
 
 
-def conflict_action(service_method_name: str, response_model_cls=None):
+def conflict_action(service_method_name: str, dto=None, response_model_cls=None):
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -25,10 +26,10 @@ def conflict_action(service_method_name: str, response_model_cls=None):
             slug = kwargs.get("slug")
             try:
                 method = getattr(conflict_service, service_method_name)
-                result = await method(current_user.id, slug)
-                if response_model_cls and result:
-                    return response_model_cls(**result.to_dict())
-                return None
+                object_entity = await method(current_user.id, slug)           
+                if response_model_cls and dto:
+                    object_dto = dto.create_dto(object_entity)
+                    return response_model_cls(**object_dto.to_dict())
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
             except Exception as e:
@@ -48,12 +49,13 @@ async def create_conflict(
     conflict_service: ConflictService = Depends(get_conflict_service),
 ):
     try:
-        conflict_dto: ConflictDetailDTO = await conflict_service.create_conflict(
+        conflict_entity: Conflict = await conflict_service.create_conflict(
             current_user.id,
             conflict_data.partner_id,
             conflict_data.title,
             items=[item.model_dump() for item in conflict_data.items],
         )
+        conflict_dto = ConflictDetailDTO.create_dto(conflict_entity)
         return ConflictDetailResponse(**conflict_dto.to_dict())
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -66,7 +68,7 @@ async def create_conflict(
     response_description="Get conflict",
     status_code=status.HTTP_200_OK,
 )
-@conflict_action("get_conflict", ConflictDetailResponse)
+@conflict_action("get_conflict", ConflictDetailDTO, ConflictDetailResponse)
 async def get_conflict(
     slug: str,
     current_user: UserDTO = Depends(get_current_user),
@@ -80,7 +82,7 @@ async def get_conflict(
     response_description="Cancel conflict",
     status_code=200,
 )
-@conflict_action("cancel_conflict", ConflictDetailResponse)
+@conflict_action("cancel_conflict", ConflictDetailDTO, ConflictDetailResponse)
 async def cancel_conflict(
     slug: str,
     current_user: UserDTO = Depends(get_current_user),
@@ -94,7 +96,7 @@ async def cancel_conflict(
     response_description="Delete conflict",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-@conflict_action("delete_conflict", ConflictDetailResponse)
+@conflict_action("delete_conflict")
 async def delete_conflict(
     slug: str,
     current_user: UserDTO = Depends(get_current_user),
@@ -108,7 +110,7 @@ async def delete_conflict(
     response_description="Create offer truce in conflict",
     status_code=status.HTTP_200_OK,
 )
-@conflict_action("create_offer_truce", ConflictDetailResponse)
+@conflict_action("create_offer_truce", ConflictDetailDTO, ConflictDetailResponse)
 async def create_offer_truce(
     slug: str,
     current_user: UserDTO = Depends(get_current_user),
@@ -122,7 +124,7 @@ async def create_offer_truce(
     response_description="Cancel offer truce in conflict",
     status_code=status.HTTP_200_OK,
 )
-@conflict_action("cancel_offer_truce", ConflictDetailResponse)
+@conflict_action("cancel_offer_truce", ConflictDetailDTO, ConflictDetailResponse)
 async def cancel_offer_truce(
     slug: str,
     current_user: UserDTO = Depends(get_current_user),
@@ -136,7 +138,7 @@ async def cancel_offer_truce(
     response_description="Accept offer truce in conflict",
     status_code=status.HTTP_200_OK,
 )
-@conflict_action("accepted_offer_truce", ConflictDetailResponse)
+@conflict_action("accepted_offer_truce", ConflictDetailDTO, ConflictDetailResponse)
 async def accept_offer_truce(
     slug: str,
     current_user: UserDTO = Depends(get_current_user),

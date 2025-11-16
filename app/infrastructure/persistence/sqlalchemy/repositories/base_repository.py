@@ -1,7 +1,19 @@
 from sqlalchemy import inspect
 from typing import Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Type
+from domain.entities.protocols import T
 
-class UtilRepository:
+
+class SQLAlchemyBaseRepository:
+    
+    def __init__(self, db_session: AsyncSession, entity: Type[T]):
+        self.db_session = db_session
+        self.entity = entity
+    
+    def create_from_data(self, data: dict) -> T:
+        return self.entity.create_entity(**data)
+        
 
     def fast_dict_for_entity(self, orm_object) -> dict:
         data = {

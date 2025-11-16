@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from domain.entities.user import User
 
 class EmailTokenRepository(ABC):
     """Интерфейс для токенов подтверждения email."""
@@ -15,9 +15,9 @@ class EmailTokenRepository(ABC):
 
 class JWTRepository(ABC):
     @abstractmethod
-    def create_access_token(self, data: dict) -> str:
+    def create_access_token(self, user: User) -> str:
         pass
     
     @abstractmethod
-    def create_refresh_token(self, data: dict) -> str:
+    def create_refresh_token(self, user: User) -> str:
         pass

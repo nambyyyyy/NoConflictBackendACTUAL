@@ -1,5 +1,5 @@
 from password_validator import PasswordValidator
-from app.domain.interfaces.password_interface import (
+from domain.interfaces.password_interface import (
     PasswordValidator as IPasswordValidator,
 )
 

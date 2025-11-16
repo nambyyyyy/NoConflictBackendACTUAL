@@ -1,20 +1,17 @@
 from typing import Optional
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from uuid import UUID
-from app.domain.interfaces.item_interface import ItemRepository
-from app.domain.entities.conflict_item import ConflictItem
-from app.infrastructure.persistence.sqlalchemy.models.conflict_item import (
+from domain.interfaces.item_interface import ItemRepository
+from domain.entities.conflict_item import ConflictItem
+from infrastructure.persistence.sqlalchemy.models.conflict_item import (
     ConflictItemORM,
 )
-from app.infrastructure.persistence.sqlalchemy.repositories.base_repository import (
-    UtilRepository,
+from infrastructure.persistence.sqlalchemy.repositories.base_repository import (
+    SQLAlchemyBaseRepository,
 )
 
 
-class SQLAlchemyConflictItemRepository(ItemRepository, UtilRepository):
-    def __init__(self, db_session: AsyncSession):
-        self.db_session = db_session
+class SQLAlchemyConflictItemRepository(ItemRepository, SQLAlchemyBaseRepository):
 
     async def get_by_id_and_conflict_id(
         self, item_id: UUID, conflict_id: UUID
@@ -27,7 +24,7 @@ class SQLAlchemyConflictItemRepository(ItemRepository, UtilRepository):
         )
         if orm_item is not None:
             item_data = self.fast_dict_for_entity(orm_item)
-            return ConflictItem.create_entity(**item_data)
+            return self.create_from_data(item_data)
 
     async def create(self, item: ConflictItem) -> Optional[ConflictItem]:
         new_item = ConflictItemORM(
@@ -40,7 +37,7 @@ class SQLAlchemyConflictItemRepository(ItemRepository, UtilRepository):
         await self.db_session.refresh(new_item)
         
         item_data = self.fast_dict_for_entity(new_item)
-        return ConflictItem.create_entity(**item_data)
+        return self.create_from_data(item_data)
 
     async def update(
         self, item: ConflictItem, update_fields: Optional[list[str]] = None
@@ -72,5 +69,5 @@ class SQLAlchemyConflictItemRepository(ItemRepository, UtilRepository):
         await self.db_session.refresh(orm_item)
         
         item_data = self.fast_dict_for_entity(orm_item)
-        return ConflictItem.create_entity(**item_data)
+        return self.create_from_data(item_data)
     

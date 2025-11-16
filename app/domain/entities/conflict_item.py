@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Protocol, Type, TypeVar, Any, Optional
 from uuid import UUID
 
 
 @dataclass
-class ConflictItem:
+class ConflictItem(Protocol):
     id: UUID
     conflict_id: UUID
     title: str

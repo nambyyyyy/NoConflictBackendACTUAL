@@ -1,10 +1,10 @@
 from celery import shared_task
-from app.infrastructure.persistence.sqlalchemy.repositories.user_repository import (
+from infrastructure.persistence.sqlalchemy.repositories.user_repository import (
     SQLAlchemyUserRepository,
 )
-from app.domain.entities.user import User
-from app.infrastructure.database.sessions import get_db_session
-from app.config import settings
+from domain.entities.user import User
+from infrastructure.database.sessions import get_db_session
+from config import settings
 from uuid import UUID
 from typing import Optional
 from urllib.parse import urljoin

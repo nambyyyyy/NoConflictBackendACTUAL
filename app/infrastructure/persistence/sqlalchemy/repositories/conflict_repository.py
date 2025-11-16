@@ -1,19 +1,16 @@
 from typing import Optional
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from app.domain.interfaces.conflict_interface import ConflictRepository
-from app.domain.entities.conflict import Conflict
-from app.infrastructure.persistence.sqlalchemy.models.conflict import ConflictORM
-from app.infrastructure.persistence.sqlalchemy.repositories.base_repository import (
-    UtilRepository,
+from domain.interfaces.conflict_interface import ConflictRepository
+from domain.entities.conflict import Conflict
+from infrastructure.persistence.sqlalchemy.models.conflict import ConflictORM
+from infrastructure.persistence.sqlalchemy.repositories.base_repository import (
+    SQLAlchemyBaseRepository,
 )
 from uuid import UUID
 
 
-class SQLAlchemyConflictRepository(ConflictRepository, UtilRepository):
-    def __init__(self, db_session: AsyncSession):
-        self.db_session = db_session
+class SQLAlchemyConflictRepository(ConflictRepository, SQLAlchemyBaseRepository):
 
     async def get_by_id(self, conflict_id: UUID) -> Optional[Conflict]:
         orm_conflict = await self.db_session.scalar(
@@ -23,7 +20,7 @@ class SQLAlchemyConflictRepository(ConflictRepository, UtilRepository):
         )
         if orm_conflict is not None:
             conflict_data = self.dict_for_entity(orm_conflict)
-            return Conflict.create_entity(**conflict_data)
+            return self.create_from_data(conflict_data)
 
     async def get_by_slug(self, slug: str) -> Optional[Conflict]:
         orm_conflict = await self.db_session.scalar(
@@ -33,7 +30,7 @@ class SQLAlchemyConflictRepository(ConflictRepository, UtilRepository):
         )
         if orm_conflict is not None:
             conflict_data = self.dict_for_entity(orm_conflict)
-            return Conflict.create_entity(**conflict_data)
+            return self.create_from_data(conflict_data)
 
     async def create(self, conflict: Conflict) -> Conflict:
         new_conflict = ConflictORM(
@@ -56,7 +53,7 @@ class SQLAlchemyConflictRepository(ConflictRepository, UtilRepository):
         )
 
         conflict_data = self.dict_for_entity(orm_conflict)
-        return Conflict.create_entity(**conflict_data)
+        return self.create_from_data(conflict_data)
 
     async def update(
         self,
@@ -104,7 +101,7 @@ class SQLAlchemyConflictRepository(ConflictRepository, UtilRepository):
             return
 
         conflict_data = self.dict_for_entity(orm_conflict)
-        return Conflict.create_entity(**conflict_data)
+        return self.create_from_data(conflict_data)
 
     async def delete(self, slug: str):
         pass

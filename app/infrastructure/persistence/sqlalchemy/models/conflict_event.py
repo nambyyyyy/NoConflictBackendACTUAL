@@ -8,10 +8,11 @@ from sqlalchemy import (
     Enum as SQLEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from persistence.sqlalchemy.models.base import Base, IsDeletedORM
+from infrastructure.persistence.sqlalchemy.models.base import BaseORM, Base
 
 
-class ConflictEventORM(Base, IsDeletedORM):
+
+class ConflictEventORM(Base, BaseORM):
     class EventTypeEnum(enum.Enum):
         TRUCE_OFFER = "truce_offer"
         TRUCE_ACCEPTED = "truce_accepted"

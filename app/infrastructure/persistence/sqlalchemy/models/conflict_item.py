@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 from sqlalchemy import String, Boolean, Uuid, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from persistence.sqlalchemy.models.base import Base, IsDeletedORM
+from infrastructure.persistence.sqlalchemy.models.base import IsDeletedORM, Base
 
 
 class ConflictItemORM(Base, IsDeletedORM):

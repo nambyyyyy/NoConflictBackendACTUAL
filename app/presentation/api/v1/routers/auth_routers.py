@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Request, Depends, HTTPException
-from app.application.services.auth_service import AuthService
-from backend.app.presentation.api.v1.shemas.account_shema import (
+from application.services.auth_service import AuthService
+from presentation.api.v1.shemas.account_shema import (
     UserRegister,
     UserResponse,
     LoginRequest,
 )
-from backend.app.presentation.api.v1.dependencies import get_auth_service
+from presentation.api.v1.dependencies import get_auth_service
 from infrastructure.tasks.notifications.send_email import send_verification_email
-from application.dtos.user_dto import UserDTO
+from domain.dtos.user_dto import UserDTO
+from domain.entities.user import User
 
 router = APIRouter()
 
@@ -20,13 +21,14 @@ async def register(
 ):
     try:
         base_url = str(request.base_url)
-        user_dto: UserDTO = await auth_service.register_user(
+        user_entity: User = await auth_service.register_user(
             email=user_data.email,
             username=user_data.username,
             password=user_data.password,
             send_email_func=send_verification_email.delay,
             base_url=base_url,
         )
+        user_dto = UserDTO.create_dto(user_entity)
         return UserResponse(**user_dto.to_dict())
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -41,7 +43,8 @@ async def verify_email(
     auth_service: AuthService = Depends(get_auth_service),
 ):
     try:
-        user_dto: UserDTO = await auth_service.verify_email(uidb64, token)
+        user_entity: User = await auth_service.verify_email(uidb64, token)
+        user_dto = UserDTO.create_dto(user_entity)
         return UserResponse(**user_dto.to_dict())
     except (TypeError, ValueError, OverflowError, UnicodeDecodeError) as e:
         raise HTTPException(status_code=400, detail=str(e))
