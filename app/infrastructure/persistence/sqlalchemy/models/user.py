@@ -29,24 +29,24 @@ class UserORM(Base, IsDeletedORM):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, comment="active")
     
     profile: Mapped[Optional["ProfileORM"]] = relationship(
-        "ProfileModel", back_populates="user", uselist=False, lazy="selectin"
+        "ProfileORM", back_populates="user", uselist=False, lazy="selectin"
     )
     created_conflicts: Mapped[list["ConflictORM"]] = relationship(
-        "ConflictModel",
+        "ConflictORM",
         back_populates="creator",
-        foreign_keys="ConflictModel.creator_id", 
+        foreign_keys="ConflictORM.creator_id", 
         lazy="selectin"
     )
     partnered_conflicts: Mapped[list["ConflictORM"]] = relationship(
-        "ConflictModel",
+        "ConflictORM",
         back_populates="partner",
-        foreign_keys="ConflictModel.partner_id", 
+        foreign_keys="ConflictORM.partner_id", 
         lazy="selectin"
     )
     initiated_truces: Mapped[list["ConflictORM"]] = relationship(
-        "ConflictModel",
+        "ConflictORM",
         back_populates="truce_initiator",
-        foreign_keys="ConflictModel.truce_initiator_id", 
+        foreign_keys="ConflictORM.truce_initiator_id", 
         lazy="selectin"
     )
 

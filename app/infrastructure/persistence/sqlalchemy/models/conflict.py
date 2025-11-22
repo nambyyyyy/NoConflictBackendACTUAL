@@ -61,26 +61,26 @@ class ConflictORM(Base, IsDeletedORM):
     )
 
     creator: Mapped["UserORM"] = relationship(
-        "UserModel",
+        "UserORM",
         foreign_keys=[creator_id],
         back_populates="created_conflicts",
         lazy="selectin",
     )
     partner: Mapped[Optional["UserORM"]] = relationship(
-        "UserModel",
+        "UserORM",
         foreign_keys=[partner_id],
         back_populates="partnered_conflicts",
         lazy="selectin",
     )
     truce_initiator: Mapped[Optional["UserORM"]] = relationship(
-        "UserModel",
+        "UserORM",
         foreign_keys=[truce_initiator_id],
         back_populates="initiated_truces",
         lazy="selectin",
     )
     items: Mapped[List["ConflictItemORM"]] = relationship(
-    "ConflictItemModel", back_populates="conflict", lazy="selectin"
+    "ConflictItemORM", back_populates="conflict", lazy="selectin"
 )
     events: Mapped[List["ConflictEventORM"]] = relationship(
-        "ConflictEventModel", back_populates="conflict", lazy="selectin"
+        "ConflictEventORM", back_populates="conflict", lazy="selectin"
     )

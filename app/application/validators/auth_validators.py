@@ -21,9 +21,9 @@ class AuthValidator:
     ) -> None:
         if await self.user_repo.get_by_email(email):
             raise ValueError("User with this email already exists")
-
         if await self.user_repo.get_by_username(username):
             raise ValueError("User with this username already exists")
+
 
         self.password_validator.validate(password)
 
@@ -37,7 +37,7 @@ class AuthValidator:
 
     def validate_login(self, user_entity: Optional[User], password: str):
         if not user_entity or not self.password_hasher.verify(
-            password, user_entity.password_hash
+            password, user_entity.password
         ):
             raise ValueError("Неверный логин или пароль")
 

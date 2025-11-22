@@ -33,8 +33,7 @@ class SQLAlchemyProfileRepository(ProfileRepository, SQLAlchemyBaseRepository):
             user_id=profile.user_id,
         )
         self.db_session.add(new_profile)
-        await self.db_session.commit()
-        await self.db_session.refresh(new_profile)
+        await self.db_session.flush()
         
         profile_data = self.dict_for_entity(new_profile)
         return self.create_from_data(profile_data)

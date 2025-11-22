@@ -9,7 +9,6 @@ import enum
 
 class ProfileORM(Base, BaseORM):
     class GenderEnum(enum.Enum):
-        NONE = ""
         MALE = "M"
         FEMALE = "F"
 
@@ -27,7 +26,7 @@ class ProfileORM(Base, BaseORM):
     )
     # choices в Django реализуются как строковое поле с ограничениями на уровне приложения или БД
     gender: Mapped[Optional[GenderEnum]] = mapped_column(
-        SQLEnum(GenderEnum), default="", nullable=True
+        SQLEnum(GenderEnum), default=None, nullable=True
     )  # 'M' или 'F'
 
     avatar_filename: Mapped[str] = mapped_column(
@@ -39,7 +38,7 @@ class ProfileORM(Base, BaseORM):
 
     # Связь: профиль принадлежит пользователю
     user: Mapped["UserORM"] = relationship(
-        "UserModel", back_populates="profile", lazy="selectin"
+        "UserORM", back_populates="profile", lazy="selectin"
     )
 
     def __str__(self):

@@ -8,7 +8,7 @@ class User:
     id: UUID
     email: str
     username: str
-    password_hash: str
+    password: str
     created_at: datetime
     email_confirmed: bool = False
     is_active: bool = True
@@ -21,7 +21,7 @@ class User:
         id: UUID,
         email: str,
         username: str,
-        password_hash: str,
+        password: str,
         created_at: datetime,
         **kwargs
     ) -> "User":
@@ -30,7 +30,7 @@ class User:
             id=id,
             email=email,
             username=username,
-            password_hash=password_hash,
+            password=password,
             created_at=created_at,
             **kwargs
         )

@@ -3,6 +3,7 @@ from domain.interfaces.token_interface import EmailTokenRepository, JWTRepositor
 from domain.interfaces.password_interface import PasswordHasher, PasswordValidator
 from domain.interfaces.link_interface import LinkDecoder
 from domain.entities.user import User
+from domain.entities.profile import Profile
 from typing import Callable, Optional
 from datetime import datetime
 from uuid import UUID, uuid4
@@ -26,7 +27,7 @@ class AuthService:
         self.password_validator = password_validator
         self.link_decoder = link_decoder
         self.validator = AuthValidator(
-            self.user_repo, self.password_hasher, self.password_validator
+            user_repository, password_hasher, password_validator
         )
 
     async def register_user(
@@ -43,13 +44,13 @@ class AuthService:
             id=uuid4(),
             email=email,
             username=username,
-            password_hash=self.password_hasher.hash(password),
+            password=self.password_hasher.hash(password),
             created_at=datetime.now(),
         )
         saved_entity: User = await self.user_repo.create(user_entity)
         token: str = self.email_token_repository.generate_token(str(user_entity.id))
+        send_email_func.delay(str(saved_entity.id), email, token, base_url)
 
-        send_email_func(str(saved_entity.id), token, base_url=base_url)
         return saved_entity
 
     async def verify_email(self, uidb64: str, token: str) -> User:
@@ -74,14 +75,17 @@ class AuthService:
         return updated_entity
 
     async def login(self, login: str, password: str) -> dict[str, str]:
-        user_entity: Optional[User] = await self.user_repo.get_by_email(login)
+        user_entity = None
+        
+        if "@" in login:
+            user_entity: Optional[User] = await self.user_repo.get_by_email(login)
         if not user_entity:
             user_entity = await self.user_repo.get_by_username(login)
 
         self.validator.validate_login(user_entity, password)
 
-        access_token = self.jwt_repository.create_access_token(user_entity) # type: ignore
-        refresh_token = self.jwt_repository.create_refresh_token(user_entity) # type: ignore
+        access_token = self.jwt_repository.create_access_token(user_entity)  # type: ignore
+        refresh_token = self.jwt_repository.create_refresh_token(user_entity)  # type: ignore
 
         return {
             "access": access_token,

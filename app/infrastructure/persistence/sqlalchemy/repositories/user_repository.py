@@ -4,12 +4,16 @@ from uuid import UUID
 from domain.interfaces.user_interface import UserRepository
 from domain.entities.user import User
 from infrastructure.persistence.sqlalchemy.models.user import UserORM
-from infrastructure.persistence.sqlalchemy.repositories.base_repository import SQLAlchemyBaseRepository
+from infrastructure.persistence.sqlalchemy.repositories.base_repository import (
+    SQLAlchemyBaseRepository,
+)
+
 
 
 class SQLAlchemyUserRepository(UserRepository, SQLAlchemyBaseRepository):
 
     async def get_by_email(self, email: str) -> Optional[User]:
+
         orm_user = await self.db_session.scalar(
             select(UserORM).where(UserORM.email == email)
         )
@@ -31,18 +35,18 @@ class SQLAlchemyUserRepository(UserRepository, SQLAlchemyBaseRepository):
             user_data = self.dict_for_entity(orm_user)
             return self.create_from_data(user_data)
 
-    async def create(self, user: User) -> Optional[User]:
+    async def create(self, user: User) -> User:
         new_user = UserORM(
             id=user.id,
             email=user.email,
             username=user.username,
-            password=user.password_hash,
+            password=user.password,
             email_confirmed=user.email_confirmed,
             is_active=user.is_active,
         )
         self.db_session.add(new_user)
-        await self.db_session.commit()
-        await self.db_session.refresh(new_user)
+        await self.db_session.flush()
+    
         user_data = self.dict_for_entity(new_user)
         return self.create_from_data(user_data)
 

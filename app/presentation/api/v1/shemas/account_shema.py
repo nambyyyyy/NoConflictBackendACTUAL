@@ -9,10 +9,10 @@ class UserRegister(BaseModel):
     password: str
     confirm_password: str
 
-    @field_validator("confirm_password")
-    def passwords_match(cls, password2, values):
-        if "password" in values and password2 != values["password"]:
-            raise ValueError("Пароли не совпадают")
+    @field_validator('confirm_password')
+    def passwords_match(cls, password2, info):
+        if hasattr(info, 'data') and info.data.get('password') != password2:
+            raise ValueError('Passwords do not match')
         return password2
 
     @field_validator("username")

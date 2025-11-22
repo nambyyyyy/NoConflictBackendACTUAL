@@ -35,10 +35,10 @@ from infrastructure.security.password_hasher import FastAPIPasswordHasher
 from infrastructure.security.password_validator import FastAPIPasswordValidator
 from infrastructure.security.link_decoder import FastAPILinkDecoder
 from application.services.auth_service import AuthService
-# from app.application.services.profile_service import ProfileService
+
+from application.services.profile_service import ProfileService
 from application.services.conflict_service import ConflictService
 from application.services.user_service import UserService
-from application.dtos.user_dto import UserDTO
 from domain.entities.conflict_item import ConflictItem
 from domain.entities.conflict_event import ConflictEvent
 from domain.entities.conflict import Conflict
@@ -52,8 +52,10 @@ import jwt
 from dotenv import load_dotenv
 from uuid import UUID
 import os
+from sqlalchemy.ext.asyncio import AsyncSession
+
 # from app.no_conflict_project.settings import SECRET_KEY, MEDIA_URL
-# from app.infrastructure.processors.avatar.avatar_processor import DjangoAvatarProcessor
+# from domain.infrastructure.processors.avatar.avatar_processor import DjangoAvatarProcessor
 # from app.infrastructure.processors.avatar.avatar_validator import AvatarValidator
 # from app.infrastructure.processors.avatar.filename_generator import FilenameGenerator
 # from app.infrastructure.processors.avatar.image_processor import ImageProcessor
@@ -64,10 +66,13 @@ import os
 load_dotenv()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/login")
 
-async def get_auth_service() -> AuthService:
-    """Фабрика для создания AuthService"""
+
+
+async def get_auth_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> AuthService:
     return AuthService(
-        user_repository=SQLAlchemyUserRepository(await get_db_session(), entity=User),
+        user_repository=SQLAlchemyUserRepository(session, User),
         email_token_repository=FastAPIEmailTokenRepository(os.getenv("SECRET_KEY")),
         jwt_repository=FastAPIJWTRepository(
             secret_key=os.getenv("SECRET_KEY"), algorithm="HS256"
@@ -78,35 +83,22 @@ async def get_auth_service() -> AuthService:
     )
 
 
-# def get_profile_service() -> ProfileService:
-#     """Фабрика для создания ProfileService"""
-# avatar_processor = DjangoAvatarProcessor(
-#     validator=AvatarValidator(),
-#     generator=FilenameGenerator(),
-#     processor=ImageProcessor(),
-#     saver=ImageSaver(storage=LocalStorage()),
-#     upload_dir="avatars",
-# )
-
-# return ProfileService(
-#     profile_repository=SQLAlchemyProfileRepository(),
-#     # avatar_processor=avatar_processor,
-#     # media_base_url=MEDIA_URL,
-# )
-
-
-async def get_conflict_service() -> ConflictService:
-    """Фабрика для создания ConflictService"""
+async def get_conflict_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> ConflictService:
     return ConflictService(
-        conflict_repository=SQLAlchemyConflictRepository(await get_db_session(), entity=Conflict),
-        item_repository=SQLAlchemyConflictItemRepository(await get_db_session(), entity=ConflictItem),
-        event_repository=SQLAlchemyConflictEventRepository(await get_db_session(), entity=ConflictEvent),
+        conflict_repository=SQLAlchemyConflictRepository(session, Conflict),
+        item_repository=SQLAlchemyConflictItemRepository(session, ConflictItem),
+        event_repository=SQLAlchemyConflictEventRepository(
+            session, entity=ConflictEvent
+        ),
     )
 
 
-async def get_user_service() -> UserService:
-    """Фабрика для создания UserService"""
-    return UserService(user_repository=SQLAlchemyUserRepository(await get_db_session(), entity=User))
+async def get_user_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> UserService:
+    return UserService(user_repository=SQLAlchemyUserRepository(session, User))
 
 
 async def get_current_user(
@@ -127,7 +119,16 @@ async def get_current_user(
     except JWTError:
         raise credentials_exception
 
-    user: UserDTO = await user_service.get_user(UUID(user_id))
+    user = await user_service.get_user(UUID(user_id))
     if user is None:
         raise credentials_exception
     return user
+
+
+async def get_profile_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> ProfileService:
+    return ProfileService(
+        profile_repository=SQLAlchemyProfileRepository(session, Profile)
+        
+    )
