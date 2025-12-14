@@ -26,18 +26,20 @@ class SQLAlchemyConflictItemRepository(ItemRepository, SQLAlchemyBaseRepository)
             item_data = self.fast_dict_for_entity(orm_item)
             return self.create_from_data(item_data)
 
-    async def create(self, item: ConflictItem) -> Optional[ConflictItem]:
+    async def create(self, item: ConflictItem) -> None:
         new_item = ConflictItemORM(
+            id=item.id,
             conflict_id=item.conflict_id,
             title=item.title,
             creator_choice_value=item.creator_choice_value,
         )
         self.db_session.add(new_item)
-        await self.db_session.commit()
-        await self.db_session.refresh(new_item)
+        try:
+            await self.db_session.flush()
+        except Exception as e:
+            print(e)
         
-        item_data = self.fast_dict_for_entity(new_item)
-        return self.create_from_data(item_data)
+
 
     async def update(
         self, item: ConflictItem, update_fields: Optional[list[str]] = None

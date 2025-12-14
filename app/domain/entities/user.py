@@ -9,7 +9,7 @@ class User:
     email: str
     username: str
     password: str
-    created_at: datetime
+    created_at: Optional[datetime] = None
     email_confirmed: bool = False
     is_active: bool = True
     is_deleted: bool = False
@@ -22,7 +22,6 @@ class User:
         email: str,
         username: str,
         password: str,
-        created_at: datetime,
         **kwargs
     ) -> "User":
             
@@ -31,7 +30,6 @@ class User:
             email=email,
             username=username,
             password=password,
-            created_at=created_at,
             **kwargs
         )
     

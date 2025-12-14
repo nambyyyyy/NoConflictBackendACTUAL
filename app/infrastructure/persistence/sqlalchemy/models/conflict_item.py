@@ -2,10 +2,10 @@ import uuid
 from typing import Optional
 from sqlalchemy import String, Boolean, Uuid, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from infrastructure.persistence.sqlalchemy.models.base import IsDeletedORM, Base
+from infrastructure.persistence.sqlalchemy.models.base import BaseORM, Base
 
 
-class ConflictItemORM(Base, IsDeletedORM):
+class ConflictItemORM(BaseORM, Base):
     __tablename__ = "conflict_items"
 
     conflict_id: Mapped[uuid.UUID] = mapped_column(

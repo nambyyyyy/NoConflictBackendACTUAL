@@ -19,7 +19,7 @@ class ConflictRepository(ABC):
         pass
 
     @abstractmethod
-    async def create(self, conflict: Conflict) -> Conflict:
+    async def create(self, conflict: Conflict) -> None:
         """Создать конфликт"""
         pass
 

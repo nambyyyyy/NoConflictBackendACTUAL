@@ -4,20 +4,17 @@ from datetime import datetime
 from typing import Optional, List, Dict
 
 
-class ConflictItem(BaseModel):
+class CreateConflictItem(BaseModel): 
     title: str = Field(..., max_length=255)
-    creator_choice_value: Optional[str] = None
-    partner_choice_value: Optional[str] = None
-    agreed_choice_value: Optional[str] = None
-
+    creator_choice_value: str
 
 class CreateConflict(BaseModel):
     partner_id: Optional[UUID] = None
     title: str = Field(..., max_length=255)
-    items: List[ConflictItem] = Field(..., min_items=1) # type: ignore
+    items: List[CreateConflictItem] = Field(..., min_items=1) # type: ignore
 
 
-class ConflictDetailResponse(BaseModel):
+class ConflictDetailResponse(BaseModel):    
     id: UUID
     creator_id: UUID
     creator_username: Optional[str] = None

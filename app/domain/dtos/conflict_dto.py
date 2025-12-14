@@ -44,8 +44,8 @@ class ConflictDetailDTO(BaseDTO):
     truce_status: str
     truce_initiator_id: Optional[UUID]
     truce_initiator_username: Optional[str]
-    items: List[ConflictItemDTO]
-    events: List[ConflictEventDTO]
+    items: List[dict]
+    events: List[dict]
     
 
 @dataclass

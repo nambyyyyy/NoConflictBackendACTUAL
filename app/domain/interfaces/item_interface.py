@@ -10,7 +10,7 @@ class ItemRepository(ABC):
     async def create(
         self,
         item: ConflictItem,
-    ) -> Optional[ConflictItem]:
+    ) -> None:
         """Создать item конфликта"""
         pass
 

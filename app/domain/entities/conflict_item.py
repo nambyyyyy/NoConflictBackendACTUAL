@@ -1,13 +1,16 @@
 from dataclasses import dataclass
 from typing import Protocol, Type, TypeVar, Any, Optional
 from uuid import UUID
+from datetime import datetime
 
 
 @dataclass
-class ConflictItem(Protocol):
+class ConflictItem:
     id: UUID
     conflict_id: UUID
     title: str
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     creator_choice_value: Optional[str] = None
     partner_choice_value: Optional[str] = None
     agreed_choice_value: Optional[str] = None

@@ -2,15 +2,30 @@ from dataclasses import dataclass
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
+import enum
 
 
-
+class EventType(str, enum.Enum):
+    TRUCE_OFFER = "TRUCE_OFFER"
+    TRUCE_ACCEPTED = "TRUCE_ACCEPTED"
+    TRUCE_DECLINED = "TRUCE_DECLINED"
+    CONFLICT_DELETE = "CONFLICT_DELETE"
+    CONFLICT_CANCEL = "CONFLICT_CANCEL"
+    CONFLICT_RESOLVED = "CONFLICT_RESOLVED"
+    ITEM_AGREED = "ITEM_AGREED"
+    ITEM_ADD = "ITEM_ADD"
+    ITEM_UPDATE = "ITEM_UPDATE"
+    CONFLICT_JOIN_SUCCESS = "CONFLICT_JOIN_SUCCESS"
+    CONFLICT_CREATE = "CONFLICT_CREATE"
+    
+    
 @dataclass
 class ConflictEvent:
     id: UUID
     conflict_id: UUID
-    event_type: str
-    created_at: datetime
+    event_type: EventType
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     initiator_id: Optional[UUID] = None
     initiator_username: Optional[str] = None
     item_id: Optional[UUID] = None
@@ -23,21 +38,13 @@ class ConflictEvent:
         cls,
         id: UUID,
         conflict_id: UUID,
-        event_type: str,
-        created_at: datetime,
+        event_type: EventType,
         **kwargs
     ) -> "ConflictEvent":
-        initiator = kwargs.pop("initiator", None)
-        item = kwargs.pop("item", None)
 
         return cls(
             id=id,
             conflict_id=conflict_id,
             event_type=event_type,
-            created_at=created_at,
-            initiator_id=getattr(initiator, "id", None),
-            initiator_username=getattr(initiator, "username", None),
-            item_id=getattr(item, "id", None),
-            item_title=getattr(item, "title", None),
             **kwargs,
         )

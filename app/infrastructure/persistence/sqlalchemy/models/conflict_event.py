@@ -14,18 +14,18 @@ from infrastructure.persistence.sqlalchemy.models.base import BaseORM, Base
 
 class ConflictEventORM(Base, BaseORM):
     class EventTypeEnum(enum.Enum):
-        TRUCE_OFFER = "truce_offer"
-        TRUCE_ACCEPTED = "truce_accepted"
-        TRUCE_DECLINED = "truce_declined"
-        CONFLICT_DELETE = "conflict_delete"
-        CONFLICT_CANCEL = "conflict_cancel"
-        CONFLICT_RESOLVED = "conflict_resolved"
-        ITEM_AGREED = "item_agreed"
-        ITEM_ADD = "item_add"
-        ITEM_UPDATE = "item_update"
-        CONFLICT_JOIN_SUCCESS = "conflict_join_success"
-        CONFLICT_CREATE = "conflict_create"
-
+        TRUCE_OFFER = "TRUCE_OFFER"
+        TRUCE_ACCEPTED = "TRUCE_ACCEPTED"
+        TRUCE_DECLINED = "TRUCE_DECLINED"
+        CONFLICT_DELETE = "CONFLICT_DELETE"
+        CONFLICT_CANCEL = "CONFLICT_CANCEL"
+        CONFLICT_RESOLVED = "CONFLICT_RESOLVED"
+        ITEM_AGREED = "ITEM_AGREED"
+        ITEM_ADD = "ITEM_ADD"
+        ITEM_UPDATE = "ITEM_UPDATE"
+        CONFLICT_JOIN_SUCCESS = "CONFLICT_JOIN_SUCCESS"
+        CONFLICT_CREATE = "CONFLICT_CREATE"
+        
     __tablename__ = "conflict_events"
 
     conflict_id: Mapped[uuid.UUID] = mapped_column(
@@ -39,9 +39,12 @@ class ConflictEventORM(Base, BaseORM):
     )
 
     event_type: Mapped[EventTypeEnum] = mapped_column(
-        SQLEnum(EventTypeEnum), nullable=False
+        SQLEnum(
+            EventTypeEnum,
+            name="eventtypeenum",
+        ),
+        nullable=False,
     )
-
     old_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     new_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 

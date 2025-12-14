@@ -3,9 +3,9 @@ from domain.interfaces.conflict_interface import (
 )
 from domain.interfaces.item_interface import ItemRepository
 from domain.interfaces.event_interface import EventRepository
-from domain.entities.conflict import Conflict, ConflictError
+from domain.entities.conflict import Conflict, ConflictError, ConflictStatusEnum, TruceStatusEnum
 from domain.entities.conflict_item import ConflictItem
-from domain.entities.conflict_event import ConflictEvent
+from domain.entities.conflict_event import ConflictEvent, EventType
 from application.validators.conflict_validators import ConflictValidator
 from typing import Optional, Callable
 from uuid import UUID, uuid4
@@ -36,54 +36,63 @@ class ConflictService:
             creator_id, partner_id, title, items
         )
 
-        conflict_entity: Conflict = Conflict.create_entity(
+        conflict_entity: Conflict = Conflict.create_entity( # type: ignore
             title=title,
             id=uuid4(),
             creator_id=creator_id,
             slug=str(uuid4()),
-            created_at=datetime.now(),
         )
+
         items_entitys: list[ConflictItem] = [
             ConflictItem.create_entity(
-                id=item.get("id"),  # type: ignore
+                id=uuid4(),  # type: ignore
                 conflict_id=conflict_entity.id,
                 title=item.get("title"),  # type: ignore
                 creator_choice_value=item.get("creator_choice_value"),
             )
             for item in items
         ]
-        saved_events: list[ConflictEvent] = [
+        
+        events_entitys: list[ConflictEvent] = [
             ConflictEvent.create_entity(
                 id=uuid4(),
                 conflict_id=conflict_entity.id,
-                event_type="conflict_create",
-                created_at=datetime.now(timezone.utc),
+                event_type=EventType.CONFLICT_CREATE,
                 initiator_id=conflict_entity.creator_id,
                 initiator_username=conflict_entity.creator_username,
             )
         ]
 
         for item in items_entitys:
-            saved_events.append(
-                ConflictEvent(
+            events_entitys.append(
+                ConflictEvent.create_entity(
                     id=uuid4(),
                     conflict_id=conflict_entity.id,
-                    event_type="item_add",
-                    created_at=datetime.now(timezone.utc),
-                    item_id=item.id,
-                    item_title=item.title,
+                    event_type=EventType.ITEM_ADD,
                     initiator_id=conflict_entity.creator_id,
                     initiator_username=conflict_entity.creator_username,
+                    item_id=item.id,
+                    item_title=item.title,
+                    new_value=item.creator_choice_value
                 )
             )
 
-        for event in saved_events:
-            await self.event_repo.create(event)
+        await self.conflict_repo.create(conflict_entity)
+        
         for item in items_entitys:
             await self.item_repo.create(item)
+         
+        for event in events_entitys:
+            await self.event_repo.create(event)
 
-        saved_conflict: Conflict = await self.conflict_repo.create(conflict_entity)
-        return saved_conflict
+
+        conflict_entity: Optional[Conflict] = await self.conflict_repo.get_by_id(
+            conflict_entity.id
+        )
+        if conflict_entity is None:
+            raise ConflictError("Conflict not created")
+
+        return conflict_entity
 
     async def get_conflict(self, user_id: UUID, slug: str) -> Optional[Conflict]:
         conflict_entity: Optional[Conflict] = await self.conflict_repo.get_by_slug(slug)
@@ -103,7 +112,7 @@ class ConflictService:
         event_entity: ConflictEvent = ConflictEvent.create_entity(
             id=uuid4(),
             conflict_id=conflict_entity.id,
-            event_type="conflict_cancel",
+            event_type=EventType.CONFLICT_CANCEL,
             created_at=datetime.now(timezone.utc),
             initiator_id=user_id,
             initiator_username=(
@@ -114,7 +123,7 @@ class ConflictService:
         )
         await self.event_repo.create(event_entity)
 
-        conflict_entity.status = "cancelled"
+        conflict_entity.status = ConflictStatusEnum.CANCELLED
         conflict_entity.resolved_at = datetime.now(timezone.utc)
 
         updated_conflict: Conflict = await self.conflict_repo.update(
@@ -167,7 +176,7 @@ class ConflictService:
         channel_layer: Callable,
     ) -> Conflict:
         return await self._update_offer_truce(
-            user_id, slug, channel_layer, "none", "pending"
+            user_id, slug, channel_layer, TruceStatusEnum.NONE, TruceStatusEnum.PENDING
         )
 
     async def cancel_offer_truce(
@@ -177,7 +186,7 @@ class ConflictService:
         channel_layer: Callable,
     ) -> Conflict:
         return await self._update_offer_truce(
-            user_id, slug, channel_layer, "pending", "none"
+            user_id, slug, channel_layer, TruceStatusEnum.PENDING, TruceStatusEnum.NONE
         )
 
     async def accepted_offer_truce(
@@ -187,12 +196,12 @@ class ConflictService:
         channel_layer: Callable,
     ) -> Conflict:
         return await self._update_offer_truce(
-            user_id, slug, channel_layer, "pending", "accepted"
+            user_id, slug, channel_layer, TruceStatusEnum.PENDING, TruceStatusEnum.ACCEPTED
         )
 
     async def update_item(
         self,
-        event_type: str,
+        event_type: EventType,
         user_id: UUID,
         slug: str,
         item_id: UUID,
@@ -223,7 +232,6 @@ class ConflictService:
             id=uuid4(),
             conflict_id=conflict_entity.id,
             event_type=event_type,
-            created_at=datetime.now(timezone.utc),
             initiator_id=(
                 conflict_entity.creator_id
                 if conflict_entity.creator_id == user_id
@@ -252,8 +260,7 @@ class ConflictService:
             event_entity: ConflictEvent = ConflictEvent.create_entity(
                 id=uuid4(),
                 conflict_id=conflict_entity.id,
-                event_type="conflict_resolved",
-                created_at=datetime.now(timezone.utc),
+                event_type=EventType.CONFLICT_RESOLVED,
             )
             await self.event_repo.create(event_entity)
             conflict: Conflict = await self.conflict_repo.update(
@@ -276,8 +283,8 @@ class ConflictService:
         user_id: UUID,
         slug: str,
         channel_layer: Callable,
-        old_truce_status: str,
-        new_truce_status: str,
+        old_truce_status: TruceStatusEnum,
+        new_truce_status: TruceStatusEnum,
     ) -> Conflict:
         conflict_entity: Optional[Conflict] = await self.conflict_repo.get_by_slug(slug)
         self.conflict_valid.validate_access_conflict(conflict_entity, user_id)
@@ -285,7 +292,7 @@ class ConflictService:
         event_entity: ConflictEvent = ConflictEvent.create_entity(
             id=uuid4(),
             conflict_id=conflict_entity.id,
-            event_type="truce_offer",
+            event_type=EventType.TRUCE_OFFER,
             created_at=datetime.now(timezone.utc),
             initiator_id=user_id,
             initiator_username=(
@@ -313,15 +320,6 @@ class ConflictService:
             ],
         )
 
-        # await channel_layer().group_send(
-        #     f"conflict_{slug}",
-        #     {
-        #         "type": "conflict.truce_offer",
-        #         "truce_status": event_entity.new_value,
-        #         "initiator_id": event_entity.initiator_id,
-        #         "initiator_username": event_entity.initiator_username,
-        #     },
-        # )
         return saved_conflict
 
     def _update_progress(self, conflict: Conflict, item_id: UUID) -> None:
@@ -336,5 +334,5 @@ class ConflictService:
             round((agreed_count / total_items) * 100, 2) if total_items else 0.0
         )
         if conflict.progress >= 100:
-            conflict.status = "resolved"
+            conflict.status = ConflictStatusEnum.RESOLVED
             conflict.resolved_at = datetime.now(timezone.utc)

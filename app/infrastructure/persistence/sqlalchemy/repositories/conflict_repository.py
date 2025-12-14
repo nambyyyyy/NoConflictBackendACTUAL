@@ -32,28 +32,16 @@ class SQLAlchemyConflictRepository(ConflictRepository, SQLAlchemyBaseRepository)
             conflict_data = self.dict_for_entity(orm_conflict)
             return self.create_from_data(conflict_data)
 
-    async def create(self, conflict: Conflict) -> Conflict:
+    async def create(self, conflict: Conflict) -> None:
         new_conflict = ConflictORM(
+            id=conflict.id,
             title=conflict.title,
             creator_id=conflict.creator_id,
-            id=conflict.id,
             slug=conflict.slug,
         )
         self.db_session.add(new_conflict)
-        await self.db_session.commit()
-        await self.db_session.refresh(new_conflict)
+        await self.db_session.flush()
 
-        orm_conflict = await self.db_session.scalar(
-            select(ConflictORM)
-            .where(ConflictORM.id == new_conflict.id)
-            .options(
-                selectinload(ConflictORM.items),
-                selectinload(ConflictORM.events),
-            )
-        )
-
-        conflict_data = self.dict_for_entity(orm_conflict)
-        return self.create_from_data(conflict_data)
 
     async def update(
         self,

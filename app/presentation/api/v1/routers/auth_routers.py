@@ -67,3 +67,8 @@ async def login(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception:
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/ping")
+async def ping():
+    return {"status": "ok"}

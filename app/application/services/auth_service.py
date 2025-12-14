@@ -44,8 +44,7 @@ class AuthService:
             id=uuid4(),
             email=email,
             username=username,
-            password=self.password_hasher.hash(password),
-            created_at=datetime.now(),
+            password=self.password_hasher.hash(password)
         )
         saved_entity: User = await self.user_repo.create(user_entity)
         token: str = self.email_token_repository.generate_token(str(user_entity.id))

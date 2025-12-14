@@ -12,11 +12,12 @@ class ConflictValidator:
         title: Optional[str],
         items: Optional[list],
     ) -> None:
-        if partner_id is not None and (creator_id == partner_id):
+        if partner_id and (creator_id == partner_id):
             raise ConflictError("Нельзя назначить партнером самого себя")
 
         if title is None:
             raise ConflictError("Название конфликта обязательно")
+        
 
         self.validate_items_registration(items)
 
@@ -25,8 +26,8 @@ class ConflictValidator:
             raise ConflictError("Для создания конфликта нужен минимум один пункт")
 
         for item in items:
-            if not item["id"]:
-                raise ConflictError("У item нет id")
+            # if not item["id"]:
+            #     raise ConflictError("У item нет id")
             if not item["title"]:
                 raise ConflictError("У item нет title")
             if not item["creator_choice_value"]:

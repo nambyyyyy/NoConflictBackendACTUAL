@@ -10,8 +10,9 @@ from infrastructure.persistence.sqlalchemy.repositories.base_repository import (
 
 class SQLAlchemyConflictEventRepository(EventRepository, SQLAlchemyBaseRepository):
 
-    async def create(self, event: ConflictEvent) -> ConflictEvent:
+    async def create(self, event: ConflictEvent) -> None:
         new_event = ConflictEventORM(
+            id=event.id,
             conflict_id=event.conflict_id,
             item_id=event.item_id,
             initiator_id=event.initiator_id,
@@ -20,8 +21,7 @@ class SQLAlchemyConflictEventRepository(EventRepository, SQLAlchemyBaseRepositor
             new_value=event.new_value,
         )
         self.db_session.add(new_event)
-        await self.db_session.commit()
-        await self.db_session.refresh(new_event)
-
-        event_data = self.dict_for_entity(new_event)
-        return self.create_from_data(event_data)
+        try:
+            await self.db_session.flush()
+        except Exception as e:
+            print(e)

@@ -45,9 +45,10 @@ from domain.entities.conflict import Conflict
 from domain.entities.user import User
 from domain.entities.profile import Profile
 from infrastructure.database.sessions import get_db_session
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
+from typing import Optional
 import jwt
 from dotenv import load_dotenv
 from uuid import UUID
@@ -113,7 +114,7 @@ async def get_current_user(
 
     try:
         payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=["HS256"])
-        user_id: str = payload.get("sub")
+        user_id: str = payload.get("user_id")
         if user_id is None:
             raise credentials_exception
     except JWTError:
@@ -122,6 +123,41 @@ async def get_current_user(
     user = await user_service.get_user(UUID(user_id))
     if user is None:
         raise credentials_exception
+    return user
+
+
+async def get_current_user_from_ws(
+    websocket: WebSocket,
+    user_service: UserService = Depends(get_user_service),
+) -> Optional[User]:
+    auth_header = websocket.headers.get("authorization")
+    if not auth_header:
+        await websocket.close(code=4401)  # 4401 - custom "unauthorized" code
+        raise WebSocketDisconnect
+
+    # Ожидаем "Bearer <token>"
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        await websocket.close(code=4401)
+        raise WebSocketDisconnect
+
+    token = parts[1]
+
+    try:
+        payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=["HS256"])
+        user_id: str = payload.get("user_id")
+        if user_id is None:
+            await websocket.close(code=4401)
+            raise WebSocketDisconnect
+    except JWTError:
+        await websocket.close(code=4401)
+        raise WebSocketDisconnect
+
+    user = await user_service.get_user(UUID(user_id))
+    if user is None:
+        await websocket.close(code=4401)
+        raise WebSocketDisconnect
+
     return user
 
 

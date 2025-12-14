@@ -8,7 +8,7 @@ from presentation.api.v1.dependencies import (
     get_conflict_service,
     get_current_user,
 )
-from domain.dtos.conflict_dto import ConflictDetailDTO
+from domain.dtos.conflict_dto import ConflictDetailDTO, ConflictItemDTO, ConflictEventDTO
 from domain.dtos.user_dto import UserDTO
 from domain.entities.conflict import Conflict
 from fastapi import status
@@ -17,32 +17,7 @@ from functools import wraps
 router = APIRouter()
 
 
-def conflict_action(service_method_name: str, dto=None, response_model_cls=None):
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            current_user = kwargs.get("current_user")
-            conflict_service = kwargs.get("conflict_service")
-            slug = kwargs.get("slug")
-            try:
-                method = getattr(conflict_service, service_method_name)
-                object_entity = await method(current_user.id, slug)           
-                if response_model_cls and dto:
-                    object_dto = dto.create_dto(object_entity)
-                    return response_model_cls(**object_dto.to_dict())
-            except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
-            except Exception as e:
-                raise HTTPException(
-                    status_code=500, detail="Internal server error"
-                ) from e
-
-        return wrapper
-
-    return decorator
-
-
-@router.post("/conflicts", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_conflict(
     conflict_data: CreateConflict,
     current_user: UserDTO = Depends(get_current_user),
@@ -56,15 +31,50 @@ async def create_conflict(
             items=[item.model_dump() for item in conflict_data.items],
         )
         conflict_dto = ConflictDetailDTO.create_dto(conflict_entity)
+        
+        conflict_dto.items = [
+            ConflictItemDTO.create_dto(item_entity).to_dict()
+            for item_entity in conflict_entity.items
+        ]
+        conflict_dto.events = [
+            ConflictEventDTO.create_dto(event_entity).to_dict()
+            for event_entity in conflict_entity.events
+        ] 
+
         return ConflictDetailResponse(**conflict_dto.to_dict())
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception:
-        raise HTTPException(status_code=500, detail="Internal server error")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
+
+
+def conflict_action(service_method_name: str, dto=None, response_model_cls=None):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            current_user = kwargs.get("current_user")
+            conflict_service = kwargs.get("conflict_service")
+            slug = kwargs.get("slug")
+            try:
+                method = getattr(conflict_service, service_method_name)
+                entity = await method(current_user.id, slug)
+                if response_model_cls and dto:
+                    object_dto = dto.create_dto(entity)
+                    return response_model_cls(**object_dto.to_dict())
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500, detail="Internal server error"
+                ) from e
+
+        return wrapper
+
+    return decorator
 
 
 @router.get(
-    "/conflicts/{slug}",
+    "/{slug}",
     response_description="Get conflict",
     status_code=status.HTTP_200_OK,
 )
@@ -78,7 +88,7 @@ async def get_conflict(
 
 
 @router.patch(
-    "/conflicts/{slug}/cancel",
+    "/{slug}/cancel",
     response_description="Cancel conflict",
     status_code=200,
 )
@@ -92,7 +102,7 @@ async def cancel_conflict(
 
 
 @router.delete(
-    "/conflicts/{slug}/delete",
+    "/{slug}/delete",
     response_description="Delete conflict",
     status_code=status.HTTP_204_NO_CONTENT,
 )
@@ -106,7 +116,7 @@ async def delete_conflict(
 
 
 @router.patch(
-    "/conflicts/{slug}/offer-truce",
+    "/{slug}/offer-truce",
     response_description="Create offer truce in conflict",
     status_code=status.HTTP_200_OK,
 )
@@ -120,7 +130,7 @@ async def create_offer_truce(
 
 
 @router.patch(
-    "/conflicts/{slug}/offer-truce/cancel",
+    "/{slug}/offer-truce/cancel",
     response_description="Cancel offer truce in conflict",
     status_code=status.HTTP_200_OK,
 )
@@ -134,7 +144,7 @@ async def cancel_offer_truce(
 
 
 @router.patch(
-    "/conflicts/{slug}/offer-truce/accept",
+    "/{slug}/offer-truce/accept",
     response_description="Accept offer truce in conflict",
     status_code=status.HTTP_200_OK,
 )
